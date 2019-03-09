@@ -1,0 +1,24 @@
+Index: python3.6/site-packages/airflow/www/app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- python3.6/site-packages/airflow/www/app.py	(date 1542524789000)
++++ python3.6/site-packages/airflow/www/app.py	(date 1542524789000)
+@@ -37,6 +37,7 @@
+ from airflow import settings
+ from airflow import configuration
+ from airflow.utils.net import get_hostname
++from flask_cors import CORS
+ 
+ csrf = CSRFProtect()
+ 
+@@ -49,6 +50,8 @@
+ 
+     csrf.init_app(app)
+ 
++    ##TODO Evaluate if this is needed in the production app
++    CORS(app, allow_headers=['Content-Type'])
+     app.config['TESTING'] = testing
+ 
+     airflow.load_login()

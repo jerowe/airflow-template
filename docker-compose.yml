@@ -1,0 +1,196 @@
+version: '3'
+
+# Run as
+# docker-compose build; docker-compose up -d
+# Check with
+# docker ps
+# Then check the logs with
+# docker logs --tail 50 $container_id
+# docker-compose images
+# docker-compose logs --tail 20 repo_name
+
+services:
+    # RabbitMQ, used by the flask app to queue up jobs whee
+    rabbit:
+        hostname: rabbit
+        image: rabbitmq:latest
+        environment:
+            - RABBITMQ_DEFAULT_USER=admin
+            - RABBITMQ_DEFAULT_PASS=mypass
+            - SERVICE_PORTS=5672
+            - TCP_PORTS=5672
+#        ports:
+#            - "5672:5672"
+        networks:
+          - app-tier
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+
+    celery_results_postgres_db:
+        hostname: celery_results_postgres_db
+        image: postgres:11.1
+        environment:   # Set up postgres database name and password
+          POSTGRES_PASSWORD: password
+          POSTGRES_DATABASE: celery
+          POSTGRES_USER: celery
+        ports:    # Set up ports exposed for other containers to connect to
+          - 5433:5432
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+          - app-tier
+
+    airflow_postgres_db:
+        hostname: airflow_postgres_db
+        image: postgres:11.1
+        environment:   # Set up postgres database name and password
+          POSTGRES_DATABASE: airflow
+          POSTGRES_USER: airflow
+          POSTGRES_PASSWORD: password
+          POSTGRES_HOST: localhost
+        ports:    # Set up ports exposed for other containers to connect to
+          - 5434:5432
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+          - app-tier
+
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+            - 8088:8080
+        networks:
+            - app-tier
+
+    # In order to build the image run
+    # It needs to be retagged to upload to quay
+    # docker-compose build --force-rm
+    # docker tag sequence_automation_airflow quay.io/nyuad_cgsb/sequence_automation_airflow:latest
+    airflow_sequencer_automation:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+        links:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+        environment:
+            RABBIT_RESULTS_HOST: celery_results_postgres_db
+            AIRFLOW_HOST: airflow_postgres_db
+            RABBIT_MQ_HOST: rabbit
+            C_FORCE_ROOT: 'true'
+        command: >
+            bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- airflow initdb; tail -f /dev/null"
+        volumes:
+            - ./pkgs:/home/airflow/pkgs
+            - ./plugins:/home/airflow/plugins
+            - ./dags:/home/airflow/dags
+            - ./.ssh:/home/airflow/.ssh:Z
+            - ./scripts:/home/airflow/scripts
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+          - app-tier
+
+    airflow_sequencer_automation_scheduler:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+            - airflow_sequencer_automation
+        links:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+        environment:
+            RABBIT_RESULTS_HOST: celery_results_postgres_db
+            AIRFLOW_HOST: airflow_postgres_db
+            RABBIT_MQ_HOST: rabbit
+            C_FORCE_ROOT: 'true'
+        command: >
+            bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- sleep 120; airflow scheduler"
+        volumes:
+            - ./pkgs:/home/airflow/pkgs
+            - ./plugins:/home/airflow/plugins
+            - ./dags:/home/airflow/dags
+            - ./.ssh:/home/airflow/.ssh:Z
+            - ./scripts:/home/airflow/scripts
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+          - app-tier
+
+    airflow_sequencer_automation_webserver:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+            - airflow_sequencer_automation
+            - airflow_sequencer_automation_scheduler
+        links:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+        environment:
+            RABBIT_RESULTS_HOST: celery_results_postgres_db
+            AIRFLOW_HOST: airflow_postgres_db
+            RABBIT_MQ_HOST: rabbit
+            C_FORCE_ROOT: 'true'
+        command: >
+            bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- sleep 120; airflow webserver"
+        volumes:
+            - ./pkgs:/home/airflow/pkgs
+            - ./plugins:/home/airflow/plugins
+            - ./dags:/home/airflow/dags
+            - ./.ssh:/home/airflow/.ssh:Z
+            - ./scripts:/home/airflow/scripts
+            - /var/run/docker.sock:/var/run/docker.sock
+        ports:
+            - "8089:8080"
+            - "5001:5000"
+        networks:
+          - app-tier
+
+    airflow_sequencer_automation_worker:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+            - airflow_sequencer_automation
+            - airflow_sequencer_automation_scheduler
+        links:
+            - celery_results_postgres_db
+            - airflow_postgres_db
+            - rabbit
+        environment:
+            RABBIT_RESULTS_HOST: celery_results_postgres_db
+            AIRFLOW_HOST: airflow_postgres_db
+            RABBIT_MQ_HOST: rabbit
+            C_FORCE_ROOT: 'true'
+        command: >
+            bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- sleep 120; airflow worker"
+        volumes:
+            - ./pkgs:/home/airflow/pkgs
+            - ./plugins:/home/airflow/plugins
+            - ./dags:/home/airflow/dags
+            - ./.ssh:/home/airflow/.ssh:Z
+            - ./scripts:/home/airflow/scripts
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+          - app-tier
+
+networks:
+  app-tier:
+    driver: bridge
