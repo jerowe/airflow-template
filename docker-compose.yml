@@ -96,7 +96,7 @@ services:
         networks:
           - app-tier
 
-    airflow_sequencer_automation_scheduler:
+    airflow_scheduler:
         build:
             context: .
             dockerfile: Dockerfile
@@ -126,7 +126,7 @@ services:
         networks:
           - app-tier
 
-    airflow_sequencer_automation_webserver:
+    airflow_webserver:
         build:
             context: .
             dockerfile: Dockerfile
@@ -135,7 +135,7 @@ services:
             - airflow_postgres_db
             - rabbit
             - airflow_sequencer_automation
-            - airflow_sequencer_automation_scheduler
+            - airflow_scheduler
         links:
             - celery_results_postgres_db
             - airflow_postgres_db
@@ -160,7 +160,7 @@ services:
         networks:
           - app-tier
 
-    airflow_sequencer_automation_worker:
+    airflow_worker:
         build:
             context: .
             dockerfile: Dockerfile
@@ -169,7 +169,7 @@ services:
             - airflow_postgres_db
             - rabbit
             - airflow_sequencer_automation
-            - airflow_sequencer_automation_scheduler
+            - airflow_scheduler
         links:
             - celery_results_postgres_db
             - airflow_postgres_db
