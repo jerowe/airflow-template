@@ -67,7 +67,7 @@ services:
     # It needs to be retagged to upload to quay
     # docker-compose build --force-rm
     # docker tag sequence_automation_airflow quay.io/nyuad_cgsb/sequence_automation_airflow:latest
-    airflow_sequencer_automation:
+    airflow_init_db:
         build:
             context: .
             dockerfile: Dockerfile
@@ -104,7 +104,7 @@ services:
             - celery_results_postgres_db
             - airflow_postgres_db
             - rabbit
-            - airflow_sequencer_automation
+            - airflow_init_db
         links:
             - celery_results_postgres_db
             - airflow_postgres_db
@@ -134,7 +134,7 @@ services:
             - celery_results_postgres_db
             - airflow_postgres_db
             - rabbit
-            - airflow_sequencer_automation
+            - airflow_init_db
             - airflow_scheduler
         links:
             - celery_results_postgres_db
@@ -168,7 +168,7 @@ services:
             - celery_results_postgres_db
             - airflow_postgres_db
             - rabbit
-            - airflow_sequencer_automation
+            - airflow_init_db
             - airflow_scheduler
         links:
             - celery_results_postgres_db
