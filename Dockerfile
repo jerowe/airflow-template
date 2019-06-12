@@ -1,7 +1,9 @@
 FROM continuumio/miniconda3:4.5.11
 
-RUN apt-get update -y; apt-get upgrade -y
-RUN apt-get update -y; apt-get upgrade -y; apt-get install -y vim-tiny vim-athena ssh
+RUN apt-get update -y; \
+    apt-get upgrade -y; \
+    apt-get install -y \
+    vim-tiny vim-athena ssh openssh-server build-essential
 
 RUN adduser --home /home/airflow airflow
 

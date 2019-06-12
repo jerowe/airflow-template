@@ -1,15 +1,24 @@
-name: airflow 
+# This is the conda env configuration file
+# In order to add more packages just add them under 'dependencies'
+# Or under the pip key if that is more your style
+name: airflow
 channels:
   - conda-forge
   - defaults
 dependencies:
   - python=3.6
-  - airflow=1.10.1
   - sshtunnel
   - flask-cors
   - flower
   - celery
-  - ipython
-  - airflow-with-postgres
   - psycopg2
   - paramiko
+# I like having ipython, but your mileage may vary
+  - ipython
+  - airflow=1.10.1
+  - airflow-with-postgres
+# Conda doesn't always have the most up to date packages
+# If you want to install with pip you can do so like this
+#  - pip:
+#      - apache-airflow==1.10.1
+#      - apache-airflow[postgres]

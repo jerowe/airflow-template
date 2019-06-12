@@ -3,9 +3,14 @@ from datetime import datetime, timedelta
 from airflow.operators.python_operator import PythonOperator
 import random
 from pprint import pprint
-from icecream_sunday_dag_def import choose_icecream_flavor, choose_cone, choose_toppings, make_icecream_sundae, default_args
+from icecream_sunday_dag_def import choose_icecream_flavor, choose_cone, choose_toppings, make_icecream_sundae, \
+    default_args
 
 icecream_sundae_linear_dag = DAG('ice_cream_sundae_linear', default_args=default_args, schedule_interval=None)
+
+"""
+Linear Ice Cream Sundae DAG Def
+"""
 
 
 def generate_choose_cone_op(dag, task_id):

@@ -4,6 +4,18 @@ from airflow.operators.python_operator import PythonOperator
 import random
 from pprint import pprint
 
+"""
+import requests
+import json
+dag_to_trigger = 'ice_cream_sundae'
+uri = 'http://localhost:8080/api/experimental/dags/{}/dag_runs'.format(ice_cream_sundae)
+conf = {'cone': 'chocolate_waffle','topping': 'strawberry sauce', 'ice_cream_flavor': 'cheesecake'}
+data = { 'conf': json.dumps(conf)}
+res = requests.post(uri, json=data)
+res.content
+res.status_code
+"""
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -77,8 +89,6 @@ make_icecream_sundae_op = PythonOperator(
     python_callable=make_icecream_sundae,
 )
 
-choose_cone_op.set_upstream(choose_icecream_flavor_op)
-choose_icecream_flavor_op.set_upstream(choose_toppings_op)
-make_icecream_sundae_op.set_upstream(choose_icecream_flavor_op)
-
-
+choose_icecream_flavor_op.set_upstream(choose_cone_op)
+choose_toppings_op.set_upstream(choose_icecream_flavor_op)
+make_icecream_sundae_op.set_upstream(choose_toppings_op)

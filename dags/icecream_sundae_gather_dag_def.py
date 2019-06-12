@@ -1,10 +1,5 @@
 from airflow import DAG
-from datetime import datetime, timedelta
-from airflow.operators.python_operator import PythonOperator
-import random
-from pprint import pprint
-from icecream_sunday_dag_def import choose_icecream_flavor, choose_cone, choose_toppings, make_icecream_sundae, \
-    default_args
+from icecream_sunday_dag_def import default_args
 from icecream_sundae_linear_dag_def import generate_choose_cone_op, generate_choose_toppings_op, \
     generate_choose_icecream_flavor_op, generate_make_icecream_sundae_op
 
