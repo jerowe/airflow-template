@@ -10,7 +10,7 @@ version: '3'
 # docker-compose logs --tail 20 repo_name
 
 services:
-  # RabbitMQ, used by the flask app to queue up jobs whee
+  # RabbitMQ, used by the celery to queue up jobs
   rabbit:
     hostname: rabbit
     image: rabbitmq:latest
@@ -63,19 +63,11 @@ services:
     networks:
       - app-tier
 
-  # In order to build the image run
-  # It needs to be retagged to upload to quay
-  # docker-compose build --force-rm
-  # docker tag sequence_automation_airflow quay.io/nyuad_cgsb/sequence_automation_airflow:latest
   airflow_init_db:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - celery_results_postgres_db
-      - airflow_postgres_db
-      - rabbit
-    links:
       - celery_results_postgres_db
       - airflow_postgres_db
       - rabbit
@@ -88,9 +80,9 @@ services:
       bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- airflow initdb; tail -f /dev/null"
     volumes:
       - ./pkgs:/home/airflow/pkgs
+      - ./airflow:/home/airflow/airflow
       - ./plugins:/home/airflow/plugins
       - ./dags:/home/airflow/dags
-      - ./.ssh:/home/airflow/.ssh:Z
       - ./scripts:/home/airflow/scripts
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -105,10 +97,6 @@ services:
       - airflow_postgres_db
       - rabbit
       - airflow_init_db
-    links:
-      - celery_results_postgres_db
-      - airflow_postgres_db
-      - rabbit
     environment:
       RABBIT_RESULTS_HOST: celery_results_postgres_db
       AIRFLOW_HOST: airflow_postgres_db
@@ -118,9 +106,9 @@ services:
       bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- sleep 120; airflow scheduler"
     volumes:
       - ./pkgs:/home/airflow/pkgs
+      - ./airflow:/home/airflow/airflow
       - ./plugins:/home/airflow/plugins
       - ./dags:/home/airflow/dags
-      - ./.ssh:/home/airflow/.ssh:Z
       - ./scripts:/home/airflow/scripts
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -149,14 +137,14 @@ services:
       bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- sleep 120; airflow webserver"
     volumes:
       - ./pkgs:/home/airflow/pkgs
+      - ./airflow:/home/airflow/airflow
       - ./plugins:/home/airflow/plugins
       - ./dags:/home/airflow/dags
-      - ./.ssh:/home/airflow/.ssh:Z
       - ./scripts:/home/airflow/scripts
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "8089:8080"
-      - "5001:5000"
+      - "8080:8080"
+      - "5002:5000"
     networks:
       - app-tier
 
@@ -183,9 +171,9 @@ services:
       bash -c "/home/airflow/scripts/wait-for-it.sh -p 5432 -h airflow_postgres_db -- sleep 120; airflow worker"
     volumes:
       - ./pkgs:/home/airflow/pkgs
+      - ./airflow:/home/airflow/airflow
       - ./plugins:/home/airflow/plugins
       - ./dags:/home/airflow/dags
-      - ./.ssh:/home/airflow/.ssh:Z
       - ./scripts:/home/airflow/scripts
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -193,4 +181,3 @@ services:
 
 networks:
   app-tier:
-    driver: bridge
